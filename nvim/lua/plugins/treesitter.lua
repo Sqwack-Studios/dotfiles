@@ -1,5 +1,6 @@
 return {
   'nvim-treesitter/nvim-treesitter',
+  branch = 'main',
   lazy = false,
   build = ':TSUpdate',
 
@@ -32,7 +33,16 @@ return {
       "markdown",}
       
 
-      ts.install(parsers)
+      -- Only install what is missing. Calling install() unconditionally
+      -- re-triggers a download on every startup for anything not yet built.
+      local installed = require('nvim-treesitter.config').get_installed('parsers')
+      local missing = vim.tbl_filter(function(lang)
+        return not vim.tbl_contains(installed, lang)
+      end, parsers)
+
+      if #missing > 0 then
+        ts.install(missing)
+      end
       vim.api.nvim_create_autocmd('FileType', {
         pattern = filetypes,
         callback = function() vim.treesitter.start() end,})

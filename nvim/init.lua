@@ -8,12 +8,19 @@ vim.g.mapleader = " "
 vim.opt.statuscolumn = "%s%{v:lnum} "
 vim.opt.cursorline = true
 
-vim.api.nvim_set_hl(0, "Normal", { bg = "none" })
-vim.api.nvim_set_hl(0, "NormalFloat", { bg = "none" })
-
 require("config.lazy")
 
-vim.cmd.colorscheme('kanagawa-wave')
+-- clangd is deliberately NOT started automatically: it indexes aggressively
+-- and can be memory-hungry. Run :Clangd in a C/C++ buffer to attach it for
+-- this session. The server config itself lives in lsp/clangd.lua.
+vim.api.nvim_create_user_command("Clangd", function()
+    vim.lsp.enable("clangd")
+    -- enable() only hooks buffers opened after it runs, so re-fire FileType
+    -- to attach the buffer you are sitting in right now.
+    vim.cmd("doautocmd FileType")
+end, { desc = "Start clangd for this session" })
+
+vim.cmd.colorscheme('kanagawa-dragon')
 
 vim.api.nvim_create_autocmd("LspAttach", {
     callback = function(args)

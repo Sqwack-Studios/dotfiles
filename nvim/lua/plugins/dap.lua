@@ -1,3 +1,30 @@
+-- lldb-dap is not reliably on PATH. MSYS2 CLANG64 and most Linux packages put
+-- it there, but on macOS Xcode ships it outside PATH and only xcrun knows the
+-- location. That lookup costs ~200ms, so it runs on the first debug session
+-- rather than at every nvim startup, and the answer is remembered.
+local lldb_dap_path
+
+local function find_lldb_dap()
+    if lldb_dap_path then
+        return lldb_dap_path
+    end
+
+    if vim.fn.executable("lldb-dap") == 1 then
+        lldb_dap_path = "lldb-dap"
+    elseif vim.fn.has("mac") == 1 then
+        local found = vim.fn.trim(vim.fn.system({ "xcrun", "-f", "lldb-dap" }))
+        if vim.v.shell_error == 0 and found ~= "" then
+            lldb_dap_path = found
+        end
+    end
+
+    -- Fall back to the bare name so nvim-dap reports a clear failure when a
+    -- session starts, instead of nvim warning on every launch.
+    lldb_dap_path = lldb_dap_path or "lldb-dap"
+
+    return lldb_dap_path
+end
+
 return {
     {
         "mfussenegger/nvim-dap",
@@ -42,29 +69,15 @@ return {
                         return vim.fn.input("Executable: ", vim.fn.getcwd() .. "/", "file")
                     end,
                 },
-                {
-                    name = "Attach with MSVC Debugger",
-                    type = "cppvsdbg",
-                    request = "attach",
-                    pid = dap_utils.pick_process,
-                    cwd = "${workspaceFolder}"
-                },
-                {
-                    name = "Launch with MSVC Debugger",
-                    type = "cppvsdbg",
-                    request = "launch",
-                    program = function()
-                        return vim.fn.input("Executable: ", vim.fn.getcwd() .. "/", "file")
-                    end,
-                }
-
             }
 
-            dap.adapters.lldb = {
-                type = "executable",
-                command = "lldb_dap",
-                name = "lldb",
-            }
+            dap.adapters.lldb = function(callback, _)
+                callback({
+                    type = "executable",
+                    command = find_lldb_dap(),
+                    name = "lldb",
+                })
+            end
 
 
 

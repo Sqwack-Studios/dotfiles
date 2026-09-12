@@ -3,10 +3,25 @@ return {
     dependencies = {
         'nvim-lua/plenary.nvim',
         -- optional but recommended
-        { 'nvim-telescope/telescope-fzf-native.nvim', build = 'make' },
+        {
+            'nvim-telescope/telescope-fzf-native.nvim',
+            -- make is not available on a stock Windows box; the project
+            -- ships a cmake path for exactly this.
+            build = vim.fn.has('win32') == 1
+                and 'cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release && cmake --install build --prefix build'
+                or 'make',
+        },
     },
 
     config = function()
+        local telescope = require('telescope')
+        telescope.setup({})
+
+        -- Built above but never loaded before, so the native sorter was
+        -- not actually in use. pcall so a failed build degrades to the
+        -- Lua sorter instead of breaking telescope entirely.
+        pcall(telescope.load_extension, 'fzf')
+
         local builtin = require('telescope.builtin')
 
         vim.keymap.set('n', "<C-p>", builtin.find_files,{})

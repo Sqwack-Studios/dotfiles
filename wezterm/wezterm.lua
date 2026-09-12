@@ -3,12 +3,12 @@ local config = wezterm.config_builder()
 
 local target = wezterm.target_triple
 
+-- Only Windows needs an explicit program. On macOS and Linux, leaving
+-- default_prog unset makes wezterm use the login shell from the password
+-- database, instead of a hardcoded path that may be wrong (Homebrew bash,
+-- fish, NixOS, or simply a user whose shell is not zsh).
 if target:find("windows") then
 	config.default_prog = { "pwsh.exe", "-NoLogo" }
-elseif target:find("darwin") then
-	config.default_prog = { "/bin/zsh", "-l" }
-elseif target:find("linux") then
-	config.default_prog = { "/bin/bash", "-l" }
 end
 
 config.font = wezterm.font({
@@ -23,19 +23,5 @@ config.font = wezterm.font({
 })
 
 config.font_size = 12.5
-
-config.keys = {
-    {
-        key = 't',
-        mods = 'CTRL',
-        action = wezterm.action.SpawnTab 'CurrentPaneDomain',
-    },
-    {
-        key = 'w',
-        mods = 'CTRL',
-        action = wezterm.action.CloseCurrentTab { confirm = false },
-    },
-
-}
 
 return config
